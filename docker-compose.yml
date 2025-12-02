@@ -1,0 +1,38 @@
+services:
+  fks-stocks:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: nuniesmith/fks:stocks-latest
+    container_name: fks-stocks
+    ports:
+      - "8016:8016"  # Health check and API port
+    environment:
+      - SERVICE_NAME=fks_stocks
+      - SERVICE_PORT=8016
+      - FKS_DATA_URL=http://fks_data:8003
+      - FKS_APP_URL=http://fks-app:8002
+      - FKS_EXECUTION_URL=http://fks-execution:8004
+      - FKS_AUTH_URL=http://fks_auth:8009
+      - HOST=0.0.0.0
+      - PYTHONPATH=/app/src:/app
+      - TRADING_MODE_TYPE=${TRADING_MODE_TYPE:-simulation}
+      - ENABLE_PROP_FIRM_RULES=${ENABLE_PROP_FIRM_RULES:-true}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - fks-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8016/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    # Note: depends_on removed - services are in separate docker-compose files
+    # Ensure fks-data, fks-app, and fks-execution are started separately
+
+networks:
+  fks-network:
+    external: true
